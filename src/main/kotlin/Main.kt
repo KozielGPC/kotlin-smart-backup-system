@@ -1,8 +1,6 @@
 import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Paths
+import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.attribute.FileTime
 
 fun initBackupDirectory(destinationDir: String) {
     val destinationPath = Paths.get(destinationDir)
@@ -54,7 +52,33 @@ fun writeFileToBackup(sourceFilePath: String, destinationDir: String) {
     }
 }
 
+fun printAllFilesAndFolders(directoryPath: String) {
+    val path = Paths.get(directoryPath)
 
+    if (!Files.exists(path)) {
+        println("O diretório não existe: $directoryPath")
+        return
+    }
+
+    Files.walkFileTree(path, setOf(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, object : SimpleFileVisitor<Path>() {
+        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+            val relativePath = path.relativize(file)
+            println("Arquivo encontrado: $relativePath")
+            return FileVisitResult.CONTINUE
+        }
+
+        override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+            val relativePath = path.relativize(dir)
+            println("Pasta encontrada: $relativePath")
+            return FileVisitResult.CONTINUE
+        }
+
+        override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
+            println("Erro ao visitar o arquivo: ${exc.message}")
+            return FileVisitResult.CONTINUE
+        }
+    })
+}
 
 fun main(args: Array<String>) {
     val sourceDirectory = "files-to-backup"
@@ -62,7 +86,7 @@ fun main(args: Array<String>) {
 
     initBackupDirectory(destinationDirectory)
 
-    writeFileToBackup("files-to-backup/texto1.txt", destinationDirectory)
+    writeFileToBackup("files-to-backup", destinationDirectory)
 
     val sourceFilePath = "files-to-backup/texto1.txt"
     val destinationFilePath = "backup-folder/texto1.txt"
@@ -72,4 +96,8 @@ fun main(args: Array<String>) {
     } else {
         println("O arquivo não foi modificado e não precisa ser copiado para o destino.")
     }
+
+    val directoryPath = "backup-folder"
+
+    printAllFilesAndFolders(directoryPath)
 }
