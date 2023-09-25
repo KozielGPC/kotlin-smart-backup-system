@@ -1,6 +1,7 @@
 import java.io.IOException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+import java.util.*
 
 fun initBackupDirectory(destinationDir: String) {
     val destinationPath = Paths.get(destinationDir)
@@ -52,6 +53,61 @@ fun writeFileToBackup(sourceFilePath: String, destinationDir: String) {
     }
 }
 
+fun copyDirectoryContentsToBackup(sourceDir: String, destinationDir: String) {
+    val sourcePath = Paths.get(sourceDir)
+    val destinationPath = Paths.get(destinationDir)
+
+    try {
+        Files.walkFileTree(
+                sourcePath,
+                EnumSet.noneOf(FileVisitOption::class.java),
+                Int.MAX_VALUE,
+                object : SimpleFileVisitor<Path>() {
+                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                        val relativePath = sourcePath.relativize(file)
+                        val destinationFile = destinationPath.resolve(relativePath)
+                        try {
+                            Files.createDirectories(destinationFile.parent)
+                            Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING)
+                            println("Arquivo ${file.fileName} copiado para o diretório de backup")
+                        } catch (e: IOException) {
+                            println("Erro ao copiar o arquivo para o diretório de backup: ${e.message}")
+                        }
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun visitFileFailed(file: Path?, exc: IOException?): FileVisitResult {
+                        println("Erro ao visitar o arquivo: $exc")
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+                        val relativePath = sourcePath.relativize(dir)
+                        val destinationDir = destinationPath.resolve(relativePath)
+                        if (!Files.exists(destinationDir)) {
+                            try {
+                                Files.createDirectories(destinationDir)
+                            } catch (e: IOException) {
+                                println("Erro ao criar diretório de backup: ${e.message}")
+                                return FileVisitResult.TERMINATE
+                            }
+                        }
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+                        if (exc != null) {
+                            println("Erro ao visitar o diretório: $exc")
+                        }
+                        return FileVisitResult.CONTINUE
+                    }
+                }
+        )
+    } catch (e: IOException) {
+        println("Erro ao copiar o diretório para o diretório de backup: ${e.message}")
+    }
+}
+
 fun printAllFilesAndFolders(directoryPath: String) {
     val path = Paths.get(directoryPath)
 
@@ -81,13 +137,17 @@ fun printAllFilesAndFolders(directoryPath: String) {
 }
 
 fun main(args: Array<String>) {
+    // Inicializa backup
     val sourceDirectory = "files-to-backup"
     val destinationDirectory = "backup-folder"
 
     initBackupDirectory(destinationDirectory)
 
-    writeFileToBackup("files-to-backup", destinationDirectory)
+    // Salva arquivos escolhidos pra backup
+    copyDirectoryContentsToBackup(sourceDirectory, destinationDirectory)
 
+
+    // Verifica se arquivo foi alterado
     val sourceFilePath = "files-to-backup/texto1.txt"
     val destinationFilePath = "backup-folder/texto1.txt"
 
@@ -97,6 +157,7 @@ fun main(args: Array<String>) {
         println("O arquivo não foi modificado e não precisa ser copiado para o destino.")
     }
 
+    // Printa todos os arquivos de uma pasta
     val directoryPath = "backup-folder"
 
     printAllFilesAndFolders(directoryPath)
