@@ -3,62 +3,67 @@ import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.*
 
-fun initBackupDirectory(destinationDir: String) {
-    val destinationPath = Paths.get(destinationDir)
+class BackupManager(private val sourceDir: String, private val destinationDir: String) {
+    init {
+        initBackupDirectory()
+    }
 
-    if (!Files.exists(destinationPath)) {
-        try {
-            Files.createDirectories(destinationPath)
-            println("Pasta de destino criada em $destinationDir")
-        } catch (e: IOException) {
-            println("Erro ao criar pasta de destino: ${e.message}")
-            return
+    private fun initBackupDirectory() {
+        val destinationPath = Paths.get(destinationDir)
+
+        if (!Files.exists(destinationPath)) {
+            try {
+                Files.createDirectories(destinationPath)
+                println("Pasta de destino criada em $destinationDir")
+            } catch (e: IOException) {
+                println("Erro ao criar pasta de destino: ${e.message}")
+                return
+            }
         }
     }
-}
 
-fun isFileModified(sourcePath: String, destinationPath: String): Boolean {
-    val sourceFile = Paths.get(sourcePath)
-    val destinationFile = Paths.get(destinationPath)
+    fun isFileModified(sourcePath: String, destinationPath: String): Boolean {
+        val sourceFile = Paths.get(sourcePath)
+        val destinationFile = Paths.get(destinationPath)
 
-    if (!Files.exists(destinationFile)) {
-        return true // Se o arquivo de destino não existir, ele foi modificado
+        if (!Files.exists(destinationFile)) {
+            return true // Se o arquivo de destino não existir, ele foi modificado
+        }
+
+        try {
+            val sourceAttributes = Files.readAttributes(sourceFile, BasicFileAttributes::class.java)
+            val destinationAttributes = Files.readAttributes(destinationFile, BasicFileAttributes::class.java)
+
+            val sourceModifiedTime = sourceAttributes.lastModifiedTime()
+            val destinationModifiedTime = destinationAttributes.lastModifiedTime()
+
+            return sourceModifiedTime > destinationModifiedTime
+        } catch (e: IOException) {
+            println("Erro ao verificar se o arquivo foi modificado: ${e.message}")
+            return false // Assumir que houve uma falha na verificação e tratar como não modificado
+        }
     }
 
-    try {
-        val sourceAttributes = Files.readAttributes(sourceFile, BasicFileAttributes::class.java)
-        val destinationAttributes = Files.readAttributes(destinationFile, BasicFileAttributes::class.java)
+    fun copyFileToBackup(sourceFilePath: String) {
+        val sourcePath = Paths.get(sourceFilePath)
+        val fileName = sourcePath.fileName.toString()
+        val destinationPath = Paths.get(destinationDir, fileName)
 
-        val sourceModifiedTime = sourceAttributes.lastModifiedTime()
-        val destinationModifiedTime = destinationAttributes.lastModifiedTime()
-
-        return sourceModifiedTime > destinationModifiedTime
-    } catch (e: IOException) {
-        println("Erro ao verificar se o arquivo foi modificado: ${e.message}")
-        return false // Assumir que houve uma falha na verificação e tratar como não modificado
+        try {
+            val content = String(Files.readAllBytes(sourcePath))
+            Files.write(destinationPath, content.toByteArray())
+            println("Arquivo $fileName copiado para o diretório de backup")
+        } catch (e: IOException) {
+            println("Erro ao copiar o arquivo para o diretório de backup: ${e.message}")
+        }
     }
-}
 
-fun writeFileToBackup(sourceFilePath: String, destinationDir: String) {
-    val sourcePath = Paths.get(sourceFilePath)
-    val fileName = sourcePath.fileName.toString()
-    val destinationPath = Paths.get(destinationDir, fileName)
+    fun copyDirectoryContentsToBackup() {
+        val sourcePath = Paths.get(sourceDir)
+        val destinationPath = Paths.get(destinationDir)
 
-    try {
-        val content = String(Files.readAllBytes(sourcePath))
-        Files.write(destinationPath, content.toByteArray())
-        println("Arquivo $fileName copiado para o diretório de backup")
-    } catch (e: IOException) {
-        println("Erro ao copiar o arquivo para o diretório de backup: ${e.message}")
-    }
-}
-
-fun copyDirectoryContentsToBackup(sourceDir: String, destinationDir: String) {
-    val sourcePath = Paths.get(sourceDir)
-    val destinationPath = Paths.get(destinationDir)
-
-    try {
-        Files.walkFileTree(
+        try {
+            Files.walkFileTree(
                 sourcePath,
                 EnumSet.noneOf(FileVisitOption::class.java),
                 Int.MAX_VALUE,
@@ -102,38 +107,39 @@ fun copyDirectoryContentsToBackup(sourceDir: String, destinationDir: String) {
                         return FileVisitResult.CONTINUE
                     }
                 }
-        )
-    } catch (e: IOException) {
-        println("Erro ao copiar o diretório para o diretório de backup: ${e.message}")
-    }
-}
-
-fun printAllFilesAndFolders(directoryPath: String) {
-    val path = Paths.get(directoryPath)
-
-    if (!Files.exists(path)) {
-        println("O diretório não existe: $directoryPath")
-        return
+            )
+        } catch (e: IOException) {
+            println("Erro ao copiar o diretório para o diretório de backup: ${e.message}")
+        }
     }
 
-    Files.walkFileTree(path, setOf(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, object : SimpleFileVisitor<Path>() {
-        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-            val relativePath = path.relativize(file)
-            println("Arquivo encontrado: $relativePath")
-            return FileVisitResult.CONTINUE
+    fun printAllFilesAndFolders() {
+        val path = Paths.get(destinationDir)
+
+        if (!Files.exists(path)) {
+            println("O diretório não existe: $destinationDir")
+            return
         }
 
-        override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-            val relativePath = path.relativize(dir)
-            println("Pasta encontrada: $relativePath")
-            return FileVisitResult.CONTINUE
-        }
+        Files.walkFileTree(path, setOf(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, object : SimpleFileVisitor<Path>() {
+            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                val relativePath = path.relativize(file)
+                println("Arquivo encontrado: $relativePath")
+                return FileVisitResult.CONTINUE
+            }
 
-        override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
-            println("Erro ao visitar o arquivo: ${exc.message}")
-            return FileVisitResult.CONTINUE
-        }
-    })
+            override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+                val relativePath = path.relativize(dir)
+                println("Pasta encontrada: $relativePath")
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
+                println("Erro ao visitar o arquivo: ${exc.message}")
+                return FileVisitResult.CONTINUE
+            }
+        })
+    }
 }
 
 fun main(args: Array<String>) {
@@ -141,17 +147,16 @@ fun main(args: Array<String>) {
     val sourceDirectory = "files-to-backup"
     val destinationDirectory = "backup-folder"
 
-    initBackupDirectory(destinationDirectory)
+    val backupManager = BackupManager(sourceDirectory, destinationDirectory)
 
     // Salva arquivos escolhidos pra backup
-    copyDirectoryContentsToBackup(sourceDirectory, destinationDirectory)
-
+    backupManager.copyDirectoryContentsToBackup()
 
     // Verifica se arquivo foi alterado
     val sourceFilePath = "files-to-backup/texto1.txt"
     val destinationFilePath = "backup-folder/texto1.txt"
 
-    if (isFileModified(sourceFilePath, destinationFilePath)) {
+    if (backupManager.isFileModified(sourceFilePath, destinationFilePath)) {
         println("O arquivo foi modificado e precisa ser copiado para o destino.")
     } else {
         println("O arquivo não foi modificado e não precisa ser copiado para o destino.")
@@ -159,6 +164,5 @@ fun main(args: Array<String>) {
 
     // Printa todos os arquivos de uma pasta
     val directoryPath = "backup-folder"
-
-    printAllFilesAndFolders(directoryPath)
+    backupManager.printAllFilesAndFolders()
 }
