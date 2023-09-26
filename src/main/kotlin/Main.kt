@@ -162,7 +162,6 @@ fun main(args: Array<String>) {
         println("O arquivo não foi modificado e não precisa ser copiado para o destino.")
     }
 
-    // Printa todos os arquivos de uma pasta
-    val directoryPath = "backup-folder"
+    // Printa todos os arquivos da pasta de backup
     backupManager.printAllFilesAndFolders()
 }
