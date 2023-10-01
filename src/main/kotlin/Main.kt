@@ -214,29 +214,76 @@ class BackupManager(private val sourceDir: String, private val destinationDir: S
 
 }
 
+class ApplicationManager(private val backupManager: BackupManager) {
+
+    fun start() {
+        val scanner = Scanner(System.`in`)
+
+        while (true) {
+            println("Escolha uma opção:")
+            println("1. Escolher arquivo para backup")
+            println("2. Listar arquivos de backup")
+            println("3. Baixar arquivo de backup")
+            println("4. Sair")
+
+            val choice = scanner.nextInt()
+
+            when (choice) {
+                1 -> chooseFileForBackup()
+                2 -> listBackupFiles()
+                3 -> downloadBackupFile()
+                4 -> {
+                    println("Saindo do programa.")
+                    return
+                }
+                else -> println("Opção inválida. Tente novamente.")
+            }
+        }
+    }
+
+    private fun chooseFileForBackup() {
+        val scanner = Scanner(System.`in`)
+        println("Digite o caminho do arquivo que deseja fazer backup:")
+        val filePath = scanner.next()
+
+        backupManager.copyFileToBackup(filePath)
+    }
+
+    private fun listBackupFiles() {
+        println("Lista de arquivos de backup:")
+        backupManager.printAllFilesAndFolders()
+    }
+
+    private fun downloadBackupFile() {
+        val scanner = Scanner(System.`in`)
+        println("Digite o nome do arquivo que deseja baixar:")
+        val fileName = scanner.next()
+        val destinationDir = "destination-folder"
+
+        val sourceFilePath = "backup-folder/$fileName"
+        val destinationFilePath = "$destinationDir/$fileName"
+
+        if (backupManager.isFileModified(sourceFilePath, destinationFilePath)) {
+            println("Baixando arquivo...")
+            backupManager.downloadFilesFromBackup(destinationDir)
+        } else {
+            println("O arquivo já existe na pasta de destino ou não foi modificado.")
+        }
+    }
+}
+
+
 fun main(args: Array<String>) {
     // Inicializa backup
     val sourceDirectory = "files-to-backup"
     val destinationDirectory = "backup-folder"
 
     val backupManager = BackupManager(sourceDirectory, destinationDirectory)
+    val applicationManager = ApplicationManager(backupManager)
 
-    // Salva arquivos escolhidos pra backup
+    // Salva arquivos escolhidos para backup
     backupManager.copyDirectoryContentsToBackup()
 
-    // Verifica se arquivo foi alterado
-    val sourceFilePath = "files-to-backup/texto1.txt"
-    val destinationFilePath = "backup-folder/texto1.txt"
-
-    if (backupManager.isFileModified(sourceFilePath, destinationFilePath)) {
-        println("O arquivo foi modificado e precisa ser copiado para o destino.")
-    } else {
-        println("O arquivo não foi modificado e não precisa ser copiado para o destino.")
-    }
-
-    // Printa todos os arquivos da pasta de backup
-    backupManager.printAllFilesAndFolders()
-
-    val destinationDownloadDirectory = "destination-folder"
-    backupManager.downloadFilesFromBackup(destinationDownloadDirectory)
+    // Inicializa o gerenciador de aplicação
+    applicationManager.start()
 }
