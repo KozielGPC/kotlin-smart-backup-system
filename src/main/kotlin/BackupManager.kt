@@ -3,7 +3,7 @@ import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.*
 
-class BackupManager(private val sourceDir: String, private val destinationDir: String) {
+class BackupManager(private val destinationDir: String = "backup-folder") {
     init {
         initBackupDirectory()
     }
@@ -58,60 +58,60 @@ class BackupManager(private val sourceDir: String, private val destinationDir: S
         }
     }
 
-    fun copyDirectoryContentsToBackup() {
-        val sourcePath = Paths.get(sourceDir)
-        val destinationPath = Paths.get(destinationDir)
-
-        try {
-            Files.walkFileTree(
-                sourcePath,
-                EnumSet.noneOf(FileVisitOption::class.java),
-                Int.MAX_VALUE,
-                object : SimpleFileVisitor<Path>() {
-                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-                        val relativePath = sourcePath.relativize(file)
-                        val destinationFile = destinationPath.resolve(relativePath)
-                        try {
-                            Files.createDirectories(destinationFile.parent)
-                            Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING)
-                            println("Arquivo ${file.fileName} copiado para o diretório de backup")
-                        } catch (e: IOException) {
-                            println("Erro ao copiar o arquivo para o diretório de backup: ${e.message}")
-                        }
-                        return FileVisitResult.CONTINUE
-                    }
-
-                    override fun visitFileFailed(file: Path?, exc: IOException?): FileVisitResult {
-                        println("Erro ao visitar o arquivo: $exc")
-                        return FileVisitResult.CONTINUE
-                    }
-
-                    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-                        val relativePath = sourcePath.relativize(dir)
-                        val destinationDir = destinationPath.resolve(relativePath)
-                        if (!Files.exists(destinationDir)) {
-                            try {
-                                Files.createDirectories(destinationDir)
-                            } catch (e: IOException) {
-                                println("Erro ao criar diretório de backup: ${e.message}")
-                                return FileVisitResult.TERMINATE
-                            }
-                        }
-                        return FileVisitResult.CONTINUE
-                    }
-
-                    override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
-                        if (exc != null) {
-                            println("Erro ao visitar o diretório: $exc")
-                        }
-                        return FileVisitResult.CONTINUE
-                    }
-                }
-            )
-        } catch (e: IOException) {
-            println("Erro ao copiar o diretório para o diretório de backup: ${e.message}")
-        }
-    }
+//    fun copyDirectoryContentsToBackup() {
+//        val sourcePath = Paths.get(sourceDir)
+//        val destinationPath = Paths.get(destinationDir)
+//
+//        try {
+//            Files.walkFileTree(
+//                sourcePath,
+//                EnumSet.noneOf(FileVisitOption::class.java),
+//                Int.MAX_VALUE,
+//                object : SimpleFileVisitor<Path>() {
+//                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+//                        val relativePath = sourcePath.relativize(file)
+//                        val destinationFile = destinationPath.resolve(relativePath)
+//                        try {
+//                            Files.createDirectories(destinationFile.parent)
+//                            Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING)
+//                            println("Arquivo ${file.fileName} copiado para o diretório de backup")
+//                        } catch (e: IOException) {
+//                            println("Erro ao copiar o arquivo para o diretório de backup: ${e.message}")
+//                        }
+//                        return FileVisitResult.CONTINUE
+//                    }
+//
+//                    override fun visitFileFailed(file: Path?, exc: IOException?): FileVisitResult {
+//                        println("Erro ao visitar o arquivo: $exc")
+//                        return FileVisitResult.CONTINUE
+//                    }
+//
+//                    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+//                        val relativePath = sourcePath.relativize(dir)
+//                        val destinationDir = destinationPath.resolve(relativePath)
+//                        if (!Files.exists(destinationDir)) {
+//                            try {
+//                                Files.createDirectories(destinationDir)
+//                            } catch (e: IOException) {
+//                                println("Erro ao criar diretório de backup: ${e.message}")
+//                                return FileVisitResult.TERMINATE
+//                            }
+//                        }
+//                        return FileVisitResult.CONTINUE
+//                    }
+//
+//                    override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+//                        if (exc != null) {
+//                            println("Erro ao visitar o diretório: $exc")
+//                        }
+//                        return FileVisitResult.CONTINUE
+//                    }
+//                }
+//            )
+//        } catch (e: IOException) {
+//            println("Erro ao copiar o diretório para o diretório de backup: ${e.message}")
+//        }
+//    }
 
     fun printAllFilesAndFolders() {
         val path = Paths.get(destinationDir)
