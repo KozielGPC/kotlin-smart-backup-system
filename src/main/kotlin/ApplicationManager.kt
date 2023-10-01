@@ -32,7 +32,7 @@ class ApplicationManager(private val backupManager: BackupManager) {
         println("Digite o caminho do arquivo que deseja fazer backup:")
         val filePath = scanner.next()
 
-        backupManager.copyFileToBackup(filePath)
+        backupManager.copyDirectoryToBackup(filePath)
     }
 
     private fun listBackupFiles() {
