@@ -42,7 +42,7 @@ class ApplicationManager(private val backupManager: BackupManager) {
 
     private fun downloadBackupFile() {
         val scanner = Scanner(System.`in`)
-        println("Digite o nome do arquivo que deseja baixar:")
+        println("Digite o caminho do arquivo que deseja baixar:")
         val fileName = scanner.next()
         val destinationDir = "destination-folder"
 
@@ -51,7 +51,7 @@ class ApplicationManager(private val backupManager: BackupManager) {
 
         if (backupManager.isFileModified(sourceFilePath, destinationFilePath)) {
             println("Baixando arquivo...")
-            backupManager.downloadFilesFromBackup(destinationDir)
+            backupManager.downloadFilesFromBackup(sourceFilePath, destinationDir)
         } else {
             println("O arquivo já existe na pasta de destino ou não foi modificado.")
         }

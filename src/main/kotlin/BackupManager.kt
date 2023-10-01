@@ -22,6 +22,13 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
         }
     }
 
+    fun isPathInDestination(destinationDir: String, pathToCheck: String): Boolean {
+        val destinationPath = Paths.get(destinationDir)
+        val fullPathToCheck = destinationPath.resolve(pathToCheck).normalize()
+
+        return Files.exists(fullPathToCheck)
+    }
+
     fun isFileModified(sourcePath: String, destinationPath: String): Boolean {
         val sourceFile = Paths.get(sourcePath)
         val destinationFile = Paths.get(destinationPath)
@@ -140,35 +147,46 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
         })
     }
 
-    fun downloadFilesFromBackup(destinationDir: String) {
-        val sourcePath = Paths.get(this.destinationDir) // Usamos a pasta de origem definida na classe
+    fun downloadFilesFromBackup(sourcePath: String, destinationPath: String) {
+        val sourceDir = Paths.get(sourcePath)
+        val destinationDir = Paths.get(destinationPath)
 
-        if (!Files.exists(sourcePath)) {
-            println("A pasta de origem (backup-folder) não existe: ${sourcePath.toAbsolutePath()}")
+        if (!Files.exists(sourceDir)) {
+            println("A pasta de origem não existe: ${sourceDir.toAbsolutePath()}")
             return
         }
 
-        val destinationPath = Paths.get(destinationDir)
-
-        if (!Files.exists(destinationPath)) {
+        if (!Files.exists(destinationDir)) {
             try {
-                Files.createDirectories(destinationPath)
-                println("Pasta de destino criada em $destinationDir")
+                Files.createDirectories(destinationDir)
+                println("Pasta de destino criada em $destinationPath")
             } catch (e: IOException) {
                 println("Erro ao criar pasta de destino: ${e.message}")
                 return
             }
         }
 
+        if (!Files.isDirectory(sourceDir)) {
+            // Se não for um diretório, copie o arquivo diretamente
+            try {
+                val destinationFile = destinationDir.resolve(sourceDir.fileName)
+                Files.copy(sourceDir, destinationFile, StandardCopyOption.REPLACE_EXISTING)
+                println("Arquivo ${sourceDir.fileName} copiado para a pasta de destino")
+            } catch (e: IOException) {
+                println("Erro ao copiar o arquivo para a pasta de destino: ${e.message}")
+            }
+            return
+        }
+
         try {
             Files.walkFileTree(
-                sourcePath,
+                sourceDir,
                 EnumSet.noneOf(FileVisitOption::class.java),
                 Int.MAX_VALUE,
                 object : SimpleFileVisitor<Path>() {
                     override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-                        val relativePath = sourcePath.relativize(file)
-                        val destinationFile = destinationPath.resolve(relativePath)
+                        val relativePath = sourceDir.relativize(file)
+                        val destinationFile = destinationDir.resolve(relativePath)
                         try {
                             Files.createDirectories(destinationFile.parent)
                             Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING)
@@ -185,8 +203,8 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
                     }
 
                     override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-                        val relativePath = sourcePath.relativize(dir)
-                        val destinationDir = destinationPath.resolve(relativePath)
+                        val relativePath = sourceDir.relativize(dir)
+                        val destinationDir = destinationDir.resolve(relativePath)
                         if (!Files.exists(destinationDir)) {
                             try {
                                 Files.createDirectories(destinationDir)
@@ -210,5 +228,4 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
             println("Erro ao copiar a pasta de origem para a pasta de destino: ${e.message}")
         }
     }
-
 }
