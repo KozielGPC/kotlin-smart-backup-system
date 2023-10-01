@@ -166,7 +166,65 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
             }
         }
 
-        if (!Files.isDirectory(sourceDir)) {
+        if (Files.isDirectory(sourceDir)) {
+            // Obtém o nome da pasta de origem
+            val sourceDirName = sourceDir.fileName.toString()
+            // Cria um novo diretório no destino com o mesmo nome da pasta de origem
+            val destinationSubDir = destinationDir.resolve(sourceDirName)
+
+            try {
+                Files.createDirectories(destinationSubDir)
+                println("Pasta de origem copiada para a pasta de destino")
+
+                Files.walkFileTree(
+                    sourceDir,
+                    EnumSet.noneOf(FileVisitOption::class.java),
+                    Int.MAX_VALUE,
+                    object : SimpleFileVisitor<Path>() {
+                        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                            val relativePath = sourceDir.relativize(file)
+                            val destinationFile = destinationSubDir.resolve(relativePath)
+                            try {
+                                Files.createDirectories(destinationFile.parent)
+                                Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING)
+                                println("Arquivo ${file.fileName} copiado para a pasta de destino")
+                            } catch (e: IOException) {
+                                println("Erro ao copiar o arquivo para a pasta de destino: ${e.message}")
+                            }
+                            return FileVisitResult.CONTINUE
+                        }
+
+                        override fun visitFileFailed(file: Path?, exc: IOException?): FileVisitResult {
+                            println("Erro ao visitar o arquivo: $exc")
+                            return FileVisitResult.CONTINUE
+                        }
+
+                        override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+                            val relativePath = sourceDir.relativize(dir)
+                            val destinationDir = destinationSubDir.resolve(relativePath)
+                            if (!Files.exists(destinationDir)) {
+                                try {
+                                    Files.createDirectories(destinationDir)
+                                } catch (e: IOException) {
+                                    println("Erro ao criar diretório de destino: ${e.message}")
+                                    return FileVisitResult.TERMINATE
+                                }
+                            }
+                            return FileVisitResult.CONTINUE
+                        }
+
+                        override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+                            if (exc != null) {
+                                println("Erro ao visitar o diretório: $exc")
+                            }
+                            return FileVisitResult.CONTINUE
+                        }
+                    }
+                )
+            } catch (e: IOException) {
+                println("Erro ao copiar a pasta de origem para a pasta de destino: ${e.message}")
+            }
+        } else {
             // Se não for um diretório, copie o arquivo diretamente
             try {
                 val destinationFile = destinationDir.resolve(sourceDir.fileName)
@@ -175,57 +233,6 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
             } catch (e: IOException) {
                 println("Erro ao copiar o arquivo para a pasta de destino: ${e.message}")
             }
-            return
-        }
-
-        try {
-            Files.walkFileTree(
-                sourceDir,
-                EnumSet.noneOf(FileVisitOption::class.java),
-                Int.MAX_VALUE,
-                object : SimpleFileVisitor<Path>() {
-                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-                        val relativePath = sourceDir.relativize(file)
-                        val destinationFile = destinationDir.resolve(relativePath)
-                        try {
-                            Files.createDirectories(destinationFile.parent)
-                            Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING)
-                            println("Arquivo ${file.fileName} copiado para a pasta de destino")
-                        } catch (e: IOException) {
-                            println("Erro ao copiar o arquivo para a pasta de destino: ${e.message}")
-                        }
-                        return FileVisitResult.CONTINUE
-                    }
-
-                    override fun visitFileFailed(file: Path?, exc: IOException?): FileVisitResult {
-                        println("Erro ao visitar o arquivo: $exc")
-                        return FileVisitResult.CONTINUE
-                    }
-
-                    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-                        val relativePath = sourceDir.relativize(dir)
-                        val destinationDir = destinationDir.resolve(relativePath)
-                        if (!Files.exists(destinationDir)) {
-                            try {
-                                Files.createDirectories(destinationDir)
-                            } catch (e: IOException) {
-                                println("Erro ao criar diretório de destino: ${e.message}")
-                                return FileVisitResult.TERMINATE
-                            }
-                        }
-                        return FileVisitResult.CONTINUE
-                    }
-
-                    override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
-                        if (exc != null) {
-                            println("Erro ao visitar o diretório: $exc")
-                        }
-                        return FileVisitResult.CONTINUE
-                    }
-                }
-            )
-        } catch (e: IOException) {
-            println("Erro ao copiar a pasta de origem para a pasta de destino: ${e.message}")
         }
     }
 }
