@@ -303,4 +303,41 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
             println("Erro ao copiar arquivos do diretório de backup: ${e.message}")
         }
     }
+
+    fun deleteFileFromBackup(filePath: String): Boolean {
+        val fileToDelete = Paths.get(filePath)
+
+        if (!Files.exists(fileToDelete)) {
+            println("O arquivo a ser excluído não existe na pasta de backup.")
+            return false
+        }
+
+        try {
+            Files.delete(fileToDelete)
+            println("Arquivo $filePath foi excluído da pasta de backup.")
+            return true
+        } catch (e: IOException) {
+            println("Erro ao excluir o arquivo da pasta de backup: ${e.message}")
+            return false
+        }
+    }
+
+    fun clearBackupFolder(): Boolean {
+        val backupDir = Paths.get(destinationDir)
+
+        if (!Files.exists(backupDir)) {
+            println("A pasta de backup não existe.")
+            return false
+        }
+
+        try {
+            Files.walk(backupDir)
+                .sorted(Comparator.reverseOrder())
+                .forEach { Files.delete(it) }
+            return true
+        } catch (e: IOException) {
+            println("Erro ao limpar a pasta de backup: ${e.message}")
+            return false
+        }
+    }
 }

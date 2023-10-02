@@ -11,7 +11,9 @@ class ApplicationManager(private val backupManager: BackupManager) {
             println("2. Listar arquivos de backup")
             println("3. Baixar arquivo de backup")
             println("4. Baixar todos os arquivos de backup")
-            println("5. Sair")
+            println("5. Deletar arquivo de backup")
+            println("6. Limpar pasta de backup")
+            println("7. Sair")
 
             val choice = scanner.nextInt()
 
@@ -20,7 +22,9 @@ class ApplicationManager(private val backupManager: BackupManager) {
                 2 -> listBackupFiles()
                 3 -> downloadBackupFile()
                 4 -> downloadAllFilesFromBackup()
-                5 -> {
+                5 -> deleteBackupFile()
+                6 -> clearBackupFolder()
+                7 -> {
                     println("Saindo do programa.")
                     return
                 }
@@ -69,6 +73,36 @@ class ApplicationManager(private val backupManager: BackupManager) {
             backupManager.downloadAllFilesFromBackup("backup-folder/", fileName)
         } else {
             println("O arquivo já existe na pasta de destino ou não foi modificado.")
+        }
+    }
+
+    private fun clearBackupFolder() {
+        println("Tem certeza de que deseja limpar totalmente a pasta de backup? (S/N)")
+        val scanner = Scanner(System.`in`)
+        val confirmation = scanner.next().toLowerCase()
+
+        if (confirmation == "s") {
+            if (backupManager.clearBackupFolder()) {
+                println("Pasta de backup foi limpa com sucesso.")
+            } else {
+                println("Não foi possível limpar a pasta de backup.")
+            }
+        } else {
+            println("Operação cancelada.")
+        }
+    }
+
+    private fun deleteBackupFile() {
+        val scanner = Scanner(System.`in`)
+        println("Digite o nome do arquivo que deseja excluir:")
+        val fileName = scanner.next()
+
+        val filePath = "backup-folder/$fileName"
+
+        if (backupManager.deleteFileFromBackup(filePath)) {
+            println("Arquivo $fileName foi excluído da pasta de backup.")
+        } else {
+            println("Não foi possível excluir o arquivo $fileName da pasta de backup.")
         }
     }
 }
