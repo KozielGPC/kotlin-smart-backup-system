@@ -10,7 +10,8 @@ class ApplicationManager(private val backupManager: BackupManager) {
             println("1. Escolher arquivo para backup")
             println("2. Listar arquivos de backup")
             println("3. Baixar arquivo de backup")
-            println("4. Sair")
+            println("4. Baixar todos os arquivos de backup")
+            println("5. Sair")
 
             val choice = scanner.nextInt()
 
@@ -18,7 +19,8 @@ class ApplicationManager(private val backupManager: BackupManager) {
                 1 -> chooseFileForBackup()
                 2 -> listBackupFiles()
                 3 -> downloadBackupFile()
-                4 -> {
+                4 -> downloadAllFilesFromBackup()
+                5 -> {
                     println("Saindo do programa.")
                     return
                 }
@@ -52,6 +54,19 @@ class ApplicationManager(private val backupManager: BackupManager) {
         if (backupManager.isFileModified(sourceFilePath, destinationFilePath)) {
             println("Baixando arquivo...")
             backupManager.downloadFilesFromBackup(sourceFilePath, destinationDir)
+        } else {
+            println("O arquivo já existe na pasta de destino ou não foi modificado.")
+        }
+    }
+
+    private fun downloadAllFilesFromBackup() {
+        val scanner = Scanner(System.`in`)
+        println("Digite o caminho para destino de backup:")
+        val fileName = scanner.next()
+
+        if (backupManager.isFileModified("backup-folder/", fileName)) {
+            println("Baixando arquivo...")
+            backupManager.downloadAllFilesFromBackup("backup-folder/", fileName)
         } else {
             println("O arquivo já existe na pasta de destino ou não foi modificado.")
         }

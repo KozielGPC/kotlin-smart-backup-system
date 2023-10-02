@@ -235,4 +235,79 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
             }
         }
     }
+
+    fun downloadAllFilesFromBackup(backupDir: String, destinationDir: String) {
+        val sourceDir = Paths.get(backupDir)
+        val destinationPath = Paths.get(destinationDir)
+
+        if (!Files.exists(sourceDir)) {
+            println("A pasta de backup não existe: ${sourceDir.toAbsolutePath()}")
+            return
+        }
+
+        if (!Files.isDirectory(sourceDir)) {
+            println("O caminho de backup não é um diretório válido.")
+            return
+        }
+
+        if (!Files.exists(destinationPath)) {
+            try {
+                Files.createDirectories(destinationPath)
+                println("Pasta de destino criada em $destinationDir")
+            } catch (e: IOException) {
+                println("Erro ao criar pasta de destino: ${e.message}")
+                return
+            }
+        }
+
+        try {
+            Files.walkFileTree(
+                sourceDir,
+                EnumSet.noneOf(FileVisitOption::class.java),
+                Int.MAX_VALUE,
+                object : SimpleFileVisitor<Path>() {
+                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                        val relativePath = sourceDir.relativize(file)
+                        val destinationFile = destinationPath.resolve(relativePath)
+                        try {
+                            Files.createDirectories(destinationFile.parent)
+                            Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING)
+                            println("Arquivo ${file.fileName} copiado para a pasta de destino")
+                        } catch (e: IOException) {
+                            println("Erro ao copiar o arquivo para a pasta de destino: ${e.message}")
+                        }
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun visitFileFailed(file: Path?, exc: IOException?): FileVisitResult {
+                        println("Erro ao visitar o arquivo: $exc")
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+                        val relativePath = sourceDir.relativize(dir)
+                        val destinationDir = destinationPath.resolve(relativePath)
+                        if (!Files.exists(destinationDir)) {
+                            try {
+                                Files.createDirectories(destinationDir)
+                            } catch (e: IOException) {
+                                println("Erro ao criar diretório de destino: ${e.message}")
+                                return FileVisitResult.TERMINATE
+                            }
+                        }
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+                        if (exc != null) {
+                            println("Erro ao visitar o diretório: $exc")
+                        }
+                        return FileVisitResult.CONTINUE
+                    }
+                }
+            )
+        } catch (e: IOException) {
+            println("Erro ao copiar arquivos do diretório de backup: ${e.message}")
+        }
+    }
 }
