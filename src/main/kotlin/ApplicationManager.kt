@@ -99,7 +99,7 @@ class ApplicationManager(private val backupManager: BackupManager) {
 
         val filePath = "backup-folder/$fileName"
 
-        if (backupManager.deleteFileFromBackup(filePath)) {
+        if (backupManager.deleteFileOrFolderFromBackup(filePath)) {
             println("Arquivo $fileName foi excluído da pasta de backup.")
         } else {
             println("Não foi possível excluir o arquivo $fileName da pasta de backup.")

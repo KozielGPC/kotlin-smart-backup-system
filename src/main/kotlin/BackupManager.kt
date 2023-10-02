@@ -39,9 +39,7 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
 
     private fun writeHashToFile(fileInfo: String) {
         try {
-            val writer = FileWriter(hashersFile, false) // O segundo parâmetro, 'false', indica que você deseja sobrescrever o arquivo
-            writer.write(fileInfo)
-            writer.close()
+            File(hashersFile).appendText(fileInfo + "\n")
         } catch (e: IOException) {
             println("Erro ao escrever informações de hash: ${e.message}")
         }
@@ -384,23 +382,47 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
         }
     }
 
-    fun deleteFileFromBackup(filePath: String): Boolean {
-        val fileToDelete = Paths.get(filePath)
+    fun deleteFileOrFolderFromBackup(filePath: String): Boolean {
+        val fileOrFolderToDelete = Paths.get(filePath)
 
-        if (!Files.exists(fileToDelete)) {
-            println("O arquivo a ser excluído não existe na pasta de backup.")
+        if (!Files.exists(fileOrFolderToDelete)) {
+            println("O arquivo ou pasta a ser excluído não existe na pasta de backup.")
             return false
         }
 
         try {
-            Files.delete(fileToDelete)
-            println("Arquivo $filePath foi excluído da pasta de backup.")
+            if (Files.isDirectory(fileOrFolderToDelete)) {
+                Files.walkFileTree(fileOrFolderToDelete, object : SimpleFileVisitor<Path>() {
+                    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                        Files.delete(file)
+                        println("Arquivo ${file.fileName} foi excluído da pasta de backup.")
+                        return FileVisitResult.CONTINUE
+                    }
+
+                    override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+                        if (exc == null) {
+                            Files.delete(dir)
+                            println("Pasta ${dir.fileName} foi excluída da pasta de backup.")
+                            return FileVisitResult.CONTINUE
+                        } else {
+                            println("Erro ao excluir a pasta: $exc")
+                            return FileVisitResult.TERMINATE
+                        }
+                    }
+                })
+                println("Pasta $filePath e seu conteúdo foram excluídos da pasta de backup.")
+            } else {
+                Files.delete(fileOrFolderToDelete)
+                println("Arquivo $filePath foi excluído da pasta de backup.")
+            }
             return true
         } catch (e: IOException) {
-            println("Erro ao excluir o arquivo da pasta de backup: ${e.message}")
+            println("Erro ao excluir o arquivo ou pasta da pasta de backup: ${e.message}")
             return false
         }
     }
+
+
 
     fun clearBackupFolder(): Boolean {
         val backupDir = Paths.get(destinationDir)
