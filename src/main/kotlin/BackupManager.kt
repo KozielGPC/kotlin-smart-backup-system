@@ -22,13 +22,6 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
         }
     }
 
-    fun isPathInDestination(destinationDir: String, pathToCheck: String): Boolean {
-        val destinationPath = Paths.get(destinationDir)
-        val fullPathToCheck = destinationPath.resolve(pathToCheck).normalize()
-
-        return Files.exists(fullPathToCheck)
-    }
-
     fun isFileModified(sourcePath: String, destinationPath: String): Boolean {
         val sourceFile = Paths.get(sourcePath)
         val destinationFile = Paths.get(destinationPath)
