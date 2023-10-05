@@ -1,0 +1,12 @@
+cors:
+  allowed-origins:
+    - "https://dev.frontend.com"
+    - "http://localhost:8000"
+
+environments:
+  dev:
+    url: "http://localhost:8000"
+    name: "Developer Setup"
+  prod:
+    url: "http://localhost:8000"
+    name: "My Cool App"

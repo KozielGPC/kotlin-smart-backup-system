@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Backup App</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="main">
+        <div class="card w-50">
+            <div class="card-header">
+                Fazer backup
+            </div>
+            <div class="card-body">
+                <form id="backupForm" action="#" class="row g-2">
+                    <label for="sourcePath">Caminho do arquivo a ser copiado:</label>
+                    <div class="col-md-9">
+                        <input type="text" id="sourcePath" name="sourcePath" placeholder="Digite o caminho do arquivo" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary" type="submit">Anexar</button>
+                    </div>
+                </form>
+                <div id="message1"></div>
+            </div>
+        </div>
+        <br />
+        <div class="card w-50">
+            <div class="card-header">
+                Listar backup
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary" id="listBackupButton">Listar</button>
+            </div>
+            <div id="backupList"></div>
+        </div>
+        <br />
+        <div class="card w-50">
+            <div class="card-header">
+                Baixar arquivos
+            </div>
+            <div class="card-body">
+                <form id="downloadForm" action="#">
+                    <label for="downloadSourcePath">Caminho de origem (backup):</label>
+                    <input type="text" id="downloadSourcePath" name="sourcePath" placeholder="Digite o caminho de origem (backup)" class="form-control" required>
+
+                    <label for="downloadDestinationPath">Caminho de destino:</label>
+                    <input type="text" id="downloadDestinationPath" name="destinationPath" placeholder="Digite o caminho de destino" class="form-control" required>
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-auto">
+                            <button class="btn btn-primary" type="submit">Baixar</button>
+                        </div>
+                        <div class="col-md-auto">
+                            <div id="message2"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <br />
+        <div class="card w-50">
+            <div class="card-header">
+                Baixar todo backup
+            </div>
+            <div class="card-body">
+                <form id="downloadAllForm" action="#" class="row g-2">
+                    <label for="downloadAllDestinationPath">Caminho de destino:</label>
+                    <div class="col-md-9">
+                    <input type="text" id="downloadAllDestinationPath" name="destinationPath" placeholder="Digite o caminho de destino" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary" type="submit">Baixar</button>
+                    </div>
+                </form>
+                <div id="message3"></div>
+            </div>
+        </div>
+        <br />
+        <div class="card w-50">
+            <div class="card-header">
+                Excluir arquivos do backup
+            </div>
+            <div class="card-body">
+                <form id="deleteBackupForm" action="#" class="row g-2">
+                    <label for="deletePath">Caminho do arquivo a ser excluído:</label>
+                    <div class="col-md-9">
+                        <input type="text" id="deletePath" name="filePath" placeholder="Digite o caminho do arquivo a ser excluído" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary" type="submit">Excluir</button>
+                    </div>
+                </form>
+                <div id="message4"></div>
+            </div>
+        </div>
+        <br />
+        <div class="card w-50">
+            <div class="card-header">
+                Limpar todo backup
+            </div>
+            <div class="card-body">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-auto">
+                    <button class="btn btn-primary" type="submit" id="clearBackupButton">Limpar</button>
+                    </div>
+                    <div class="col-md-auto">
+                        <div id="message5"></div>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#backupForm').submit(function (e) {
+                e.preventDefault();
+                const sourcePath = $('#sourcePath').val();
+                $.get(`/backup?sourcePath=${sourcePath}`, function (data) {
+                    $('#message1').text('Backup realizado com sucesso.');
+                }).fail(function () {
+                    $('#message1').text('Erro ao realizar o backup.');
+                });
+                $('#sourcePath').val('');
+            });
+
+            $('#downloadForm').submit(function (e) {
+                e.preventDefault();
+                const sourcePath = $('#downloadSourcePath').val();
+                const destinationPath = $('#downloadDestinationPath').val();
+                $.get(`/download?sourcePath=${sourcePath}&destinationPath=${destinationPath}`, function (data) {
+                    $('#message2').text('Download realizado com sucesso.');
+                }).fail(function () {
+                    $('#message2').text('Erro ao baixar os arquivos.');
+                });
+                $('#downloadSourcePath').val('');
+                $('#downloadDestinationPath').val('');
+            });
+
+            $('#downloadAllForm').submit(function (e) {
+                e.preventDefault();
+                const destinationPath = $('#downloadAllDestinationPath').val();
+                $.get(`/downloadAll?destinationPath=${destinationPath}`, function (data) {
+                    $('#message3').text('Download realizado com sucesso.');
+                }).fail(function () {
+                    $('#message3').text('Erro ao baixar os arquivos.');
+                });
+                $('#downloadAllDestinationPath').val('');
+            });
+
+            $('#listBackupButton').click(function () {
+                $.get('/listBackup', function (data) {
+                    const folderStructure = createFolderStructure(data);
+                    displayBackupList(folderStructure);
+                });
+            });
+
+            function createFolderStructure(data) {
+                const folderStructure = {};
+
+                data.forEach(item => {
+                    const pathComponents = item.name.split(/[\\\/]/); // Divide o nome do arquivo ou pasta em componentes
+                    let currentFolder = folderStructure;
+
+                    pathComponents.forEach(component => {
+                        if (!currentFolder[component]) {
+                            // currentFolder[component] = item.isDirectory ? {} : null;
+                            currentFolder[component] = {};
+                        }
+                        currentFolder = currentFolder[component];
+                    });
+                });
+
+                return folderStructure;
+            }
+
+            function displayBackupList(folderStructure) {
+                var backupList = $('#backupList');
+                backupList.empty();
+
+                function displayFolder(folder, depth) {
+                    for (var name in folder) {
+                        var icon = (Object.keys(folder[name]).length > 0) ? '📂' : '📄';
+                        var tabulation = '&nbsp;&nbsp;'.repeat(depth); // 2 espaços por nível
+                        backupList.append('<p>' + tabulation + icon + ' ' + name + '</p>');
+                        if (Object.keys(folder[name]).length > 0) {
+                            displayFolder(folder[name], depth + 1);
+                        }
+                    }
+                }
+
+                displayFolder(folderStructure, 0);
+            }
+
+            $('#deleteBackupForm').submit(function (e) {
+                e.preventDefault();
+                const filePath = $('#deletePath').val();
+                $.get(`/deleteBackup?filePath=${filePath}`, function (data) {
+                    $('#message4').text('Exclusão realizada com sucesso.');
+                }).fail(function () {
+                    $('#message4').text('Erro ao realizar a exclusão.');
+                });
+                $('#deletePath').val('');
+            });
+
+            $('#clearBackupButton').click(function () {
+                $.get('/clearBackup', function (data) {
+                    $('#message5').text('Limpeza realizada com sucesso.');
+                }).fail(function () {
+                    $('#message5').text('Erro ao realizar a limpeza.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
