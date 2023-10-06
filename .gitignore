@@ -1,5 +1,6 @@
 backup-folder
 destination-folder
+src/main/kotlin/hashers.txt
 
 HELP.md
 .gradle
