@@ -14,13 +14,13 @@
                 Fazer backup
             </div>
             <div class="card-body">
-                <form id="backupForm" action="#" class="row g-2">
-                    <label for="sourcePath">Caminho do arquivo a ser copiado:</label>
+                <form id="backupForm" action="#" class="row g-2" enctype="multipart/form-data">
+                    <label for="file">Escolha um arquivo para fazer backup:</label>
                     <div class="col-md-9">
-                        <input type="text" id="sourcePath" name="sourcePath" placeholder="Digite o caminho do arquivo" class="form-control" required>
+                        <input type="file" id="file" name="file" class="form-control" required>
                     </div>
                     <div class="col-md-3">
-                        <button class="btn btn-primary" type="submit">Anexar</button>
+                        <button class="btn btn-primary" type="submit">Fazer Backup</button>
                     </div>
                 </form>
                 <div id="message1"></div>
@@ -114,16 +114,29 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function () {
-            $('#backupForm').submit(function (e) {
+                $(document).ready(function () {
+                        $('#backupForm').submit(function (e) {
                 e.preventDefault();
-                const sourcePath = $('#sourcePath').val();
-                $.get(`/backup?sourcePath=${sourcePath}`, function (data) {
-                    $('#message1').text('Backup realizado com sucesso.');
-                }).fail(function () {
-                    $('#message1').text('Erro ao realizar o backup.');
+
+                const formData = new FormData();
+                formData.append('file', $('#file')[0].files[0]); // Adicione o arquivo selecionado ao formulário
+
+                $.ajax({
+                    url: '/upload', // Endpoint para fazer o upload
+                    type: 'POST', // Use POST para envio de arquivo
+                    data: formData,
+                    processData: false, // Não processe os dados
+                    contentType: false, // Não defina o tipo de conteúdo
+                    success: function (data) {
+                        $('#message1').text('Backup realizado com sucesso.');
+                    },
+                    error: function () {
+                        $('#message1').text('Erro ao realizar o backup.');
+                    }
                 });
-                $('#sourcePath').val('');
+
+                // Limpe o campo de upload de arquivo
+                $('#file').val('');
             });
 
             $('#downloadForm').submit(function (e) {

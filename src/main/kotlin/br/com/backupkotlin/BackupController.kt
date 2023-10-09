@@ -4,6 +4,7 @@ import BackupManager
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import java.util.concurrent.atomic.AtomicLong
 
 data class DirectoryItem(val name: String, val isDirectory: Boolean)
@@ -15,6 +16,11 @@ class BackupController(private val backupManager: BackupManager) {
     @GetMapping("/backup")
     fun backup(@RequestParam sourcePath: String) {
         backupManager.copyToBackup(sourcePath)
+    }
+
+    @PostMapping("/upload")
+    fun uploadFile(@RequestParam("file") file: MultipartFile): String {
+        return backupManager.uploadFileToBackup(file)
     }
 
     @GetMapping("/download")

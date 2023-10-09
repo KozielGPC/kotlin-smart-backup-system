@@ -1,4 +1,5 @@
 import br.com.backupkotlin.DirectoryItem
+import org.springframework.web.multipart.MultipartFile
 import java.io.*
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
@@ -11,6 +12,34 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
 
     init {
         initBackupDirectory()
+    }
+
+    fun uploadFileToBackup(file: MultipartFile): String {
+        this.initBackupDirectory()
+        val originalFilename = file.originalFilename ?: ""
+        val destinationPath = Paths.get(destinationDir, originalFilename)
+
+        var fis: FileInputStream? = null
+
+        try {
+            file.transferTo(destinationPath)
+
+            // Abra o arquivo com FileInputStream
+            fis = FileInputStream(destinationPath.toFile())
+
+            val fileInfo = generateFileInfo(destinationPath, destinationPath)
+            writeHashToFile(fileInfo)
+
+            fis.close()
+
+
+            return "Upload do arquivo $originalFilename realizado com sucesso."
+        } catch (e: IOException) {
+            println("Erro ao fazer upload do arquivo: ${e.message}")
+            return "Erro ao fazer upload do arquivo."
+        } finally {
+            fis?.close()
+        }
     }
 
     private fun initBackupDirectory() {
@@ -28,15 +57,19 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
 
     private fun calculateSHA256(file: Path): String {
         val digest = MessageDigest.getInstance("SHA-256")
-        val fis = FileInputStream(file.toFile())
         val byteArray = ByteArray(1024)
         var bytesRead: Int
-        while (fis.read(byteArray).also { bytesRead = it } != -1) {
-            digest.update(byteArray, 0, bytesRead)
+
+        FileInputStream(file.toFile()).use { fis ->
+            while (fis.read(byteArray).also { bytesRead = it } != -1) {
+                digest.update(byteArray, 0, bytesRead)
+            }
         }
+
         val hashBytes = digest.digest()
         return hashBytes.joinToString("") { "%02x".format(it) }
     }
+
 
     private fun writeHashToFile(fileInfo: String) {
         try {
@@ -47,11 +80,16 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
     }
 
     private fun generateFileInfo(sourcePath: Path, destinationPath: Path): String {
-        val sourceFile = sourcePath.toFile()
-        val hash = calculateSHA256(sourcePath)
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        val lastModified = dateFormat.format(Date(sourceFile.lastModified()))
-        return "${destinationPath.toString()}|$hash|$lastModified"
+        try {
+            val sourceFile = sourcePath.toFile()
+            val hash = calculateSHA256(sourcePath)
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+            val lastModified = dateFormat.format(Date(sourceFile.lastModified()))
+            return "${destinationPath.toString()}|$hash|$lastModified"
+        } catch (e: IOException) {
+            println("Erro ao gerar informações de arquivo: ${e.message}")
+            return ""
+        }
     }
 
     fun isFileModified(sourcePath: String, destinationPath: String): Boolean {
@@ -177,6 +215,7 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
     }
 
     fun getDirectoryItems(): List<DirectoryItem> {
+        this.initBackupDirectory();
         val path = Paths.get(destinationDir)
 
         if (!Files.exists(path)) {
@@ -208,6 +247,7 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
     }
 
     fun downloadFilesFromBackup(sourcePath: String, destinationPath: String) {
+        this.initBackupDirectory();
         val sourceDir = Paths.get("backup-folder").resolve(sourcePath)
         val destinationDir = Paths.get(destinationPath)
 
@@ -300,6 +340,7 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
     }
 
     fun downloadAllFilesFromBackup(destinationDir: String) {
+        this.initBackupDirectory();
         val sourceDir = Paths.get("backup-folder")
         val destinationPath = Paths.get(destinationDir)
 
@@ -378,6 +419,7 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
     }
 
     fun deleteFileOrFolderFromBackup(filePath: String): Boolean {
+        this.initBackupDirectory();
         val fileOrFolderToDelete = Paths.get(filePath)
 
         if (!Files.exists(fileOrFolderToDelete)) {
@@ -418,6 +460,7 @@ class BackupManager(private val destinationDir: String = "backup-folder") {
     }
 
     fun clearBackupFolder(): Boolean {
+        this.initBackupDirectory();
         val backupDir = Paths.get(destinationDir)
 
         if (!Files.exists(backupDir)) {
