@@ -1,2 +1,2 @@
-# kotlin-intelligent-backup-system
-An Intelligent backup system using Kotlin for the Aspects of Programming Language
+# kotlin-smart-backup-system
+A smart backup system using Kotlin for the Aspects of Programming Language
